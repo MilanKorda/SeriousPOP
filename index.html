@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SeriousPOP – Module 1: Sum of Squares</title>
+  <style>
+    :root { --bg:#0b1020; --panel:#121a33; --muted:#94a3b8; --text:#e2e8f0; --accent:#60a5fa; --good:#34d399; --bad:#fb7185; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
+    header { display:flex; gap:14px; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+    h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: .2px; }
+    .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .grid { display:grid; grid-template-columns: 1fr 310px; gap: 14px; }
+    .card { background: var(--panel); border: 1px solid rgba(148,163,184,.18); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,.25); }
+    .card h2 { margin: 0; font-size: 14px; padding: 12px 12px 0 12px; color: var(--muted); font-weight: 650; }
+    .card .body { padding: 12px; }
+    canvas { width: 100%; height: auto; display:block; background: radial-gradient(1200px 400px at 10% 0%, rgba(96,165,250,.18), transparent 60%),
+                                         radial-gradient(900px 500px at 90% 30%, rgba(52,211,153,.10), transparent 60%),
+                                         linear-gradient(180deg, rgba(255,255,255,.02), transparent 35%); }
+    .row { display:flex; gap: 10px; align-items:center; flex-wrap: wrap; }
+    .pill { border: 1px solid rgba(148,163,184,.18); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: var(--muted); background: rgba(255,255,255,.02); }
+    .pill strong { color: var(--text); font-weight: 750; }
+    .btn { cursor:pointer; border: 1px solid rgba(148,163,184,.24); background: rgba(255,255,255,.03); color: var(--text);
+           padding: 8px 10px; border-radius: 10px; font-weight: 650; font-size: 12px; }
+    .btn:hover { border-color: rgba(96,165,250,.6); }
+    .btn:active { transform: translateY(1px); }
+    .note { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 11px; padding: 2px 6px; border-radius: 6px;
+           border:1px solid rgba(148,163,184,.25); background: rgba(0,0,0,.25); color: #cbd5e1; }
+    .status { font-weight: 750; }
+    .status.good { color: var(--good); }
+    .status.bad { color: var(--bad); }
+    .list { margin: 8px 0 0 0; padding-left: 18px; }
+    .list li { margin: 6px 0; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>SeriousPOP – Module 1: “Integers as sums of squares”</h1>
+        <div class="sub">Drag square tiles onto the board. Your goal: match the target integer as a sum of square areas.</div>
+      </div>
+      <div class="row">
+        <button class="btn" id="newBtn">New target</button>
+        <button class="btn" id="clearBtn">Clear board</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Board</h2>
+        <canvas id="game" width="760" height="560"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Controls</h2>
+        <div class="body">
+          <div class="row" style="margin-bottom:10px">
+            <div class="pill">Target: <strong id="targetTxt">—</strong></div>
+            <div class="pill">Current sum: <strong id="sumTxt">0</strong></div>
+            <div class="pill">Remaining: <strong id="remTxt">—</strong></div>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <div class="pill">Status: <span id="statusTxt" class="status">Keep going</span></div>
+          </div>
+
+          <div class="note" style="margin-bottom:10px">
+            <ul class="list">
+              <li>Drag tiles from the <strong>palette</strong> (right side) into the <strong>board</strong> (left).</li>
+              <li>Tiles <strong>snap to the grid</strong>. They must fit and not overlap.</li>
+              <li>Press <span class="kbd">R</span> to reset board. Press <span class="kbd">N</span> for a new target.</li>
+              <li>Double-click a placed tile to remove it.</li>
+            </ul>
+          </div>
+
+          <div class="note">
+            This is a lightweight, dependency-free prototype you can host as a static HTML file (no server needed).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ---------- Config ----------
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  // Board layout inside canvas
+  const CELL = 24;
+  const PAD = 14;
+
+  // Regions: board area on left, palette on right
+  const BOARD = { x: PAD, y: 62, w: 24*18, h: 24*18 }; // 18x18 grid
+  const PALETTE = { x: BOARD.x + BOARD.w + 18, y: 62, w: canvas.width - (BOARD.x + BOARD.w + 18) - PAD, h: BOARD.h };
+
+  // Available square sizes (side length in cells)
+  const SIZES = [1,2,3,4,5]; // areas are squares: 1,4,9,16,25
+
+  // ---------- State ----------
+  let target = 0;
+  let placed = [];   // {id, s, gx, gy} grid coords (top-left in board grid)
+  let dragging = null; // {source:'palette'|'board', tile, offx, offy, px, py}
+  let hoverRemove = null;
+
+  // ---------- Helpers ----------
+  const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+
+  function newTarget() {
+    // Choose a target that is "reasonably" decomposable with squares up to 5^2 = 25.
+    // We'll generate as sum of 2..6 random square areas, then maybe add a small offset (0..3) as extra challenge.
+    const k = rnd(2,6);
+    let t = 0;
+    for (let i=0;i<k;i++) {
+      const s = SIZES[rnd(0,SIZES.length-1)];
+      t += s*s;
+    }
+    if (Math.random() < 0.25) t += rnd(0,3);
+    target = t;
+    updateHUD();
+    flashStatus("New target set.", "good", 850);
+  }
+
+  function clearBoard() {
+    placed = [];
+    updateHUD();
+    flashStatus("Board cleared.", "good", 850);
+  }
+
+  function updateHUD() {
+    const sum = placed.reduce((acc,t) => acc + t.s*t.s, 0);
+    document.getElementById("targetTxt").textContent = String(target);
+    document.getElementById("sumTxt").textContent = String(sum);
+    document.getElementById("remTxt").textContent = String(Math.max(0, target - sum));
+
+    const status = document.getElementById("statusTxt");
+    if (sum === target) {
+      status.textContent = "Solved ✓";
+      status.classList.add("good");
+      status.classList.remove("bad");
+    } else if (sum > target) {
+      status.textContent = "Too high";
+      status.classList.add("bad");
+      status.classList.remove("good");
+    } else {
+      status.textContent = "Keep going";
+      status.classList.remove("good","bad");
+    }
+  }
+
+  let statusTimer = null;
+  function flashStatus(msg, kind, ms) {
+    const status = document.getElementById("statusTxt");
+    const prev = status.textContent;
+    const prevCls = status.className;
+    status.textContent = msg;
+    status.className = "status " + (kind || "");
+    if (statusTimer) clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => {
+      status.textContent = prev;
+      status.className = prevCls;
+      updateHUD();
+    }, ms || 900);
+  }
+
+  function pointInRect(px, py, r) {
+    return px >= r.x && px <= r.x+r.w && py >= r.y && py <= r.y+r.h;
+  }
+
+  function boardToGrid(px, py) {
+    const gx = Math.floor((px - BOARD.x) / CELL);
+    const gy = Math.floor((py - BOARD.y) / CELL);
+    return {gx, gy};
+  }
+
+  function gridToBoardPx(gx, gy) {
+    return {x: BOARD.x + gx*CELL, y: BOARD.y + gy*CELL};
+  }
+
+  function rectsOverlap(a, b) {
+    return !(a.x+a.w <= b.x || b.x+b.w <= a.x || a.y+a.h <= b.y || b.y+b.h <= a.y);
+  }
+
+  function tileRectInBoard(tile) {
+    const p = gridToBoardPx(tile.gx, tile.gy);
+    return { x: p.x, y: p.y, w: tile.s*CELL, h: tile.s*CELL };
+  }
+
+  function canPlace(s, gx, gy, ignoreId=null) {
+    // within board
+    if (gx < 0 || gy < 0) return false;
+    if (gx + s > BOARD.w / CELL) return false;
+    if (gy + s > BOARD.h / CELL) return false;
+
+    const cand = { x: gx, y: gy, w: s, h: s };
+    for (const t of placed) {
+      if (ignoreId && t.id === ignoreId) continue;
+      const r = { x: t.gx, y: t.gy, w: t.s, h: t.s };
+      if (!(cand.x+cand.w <= r.x || r.x+r.w <= cand.x || cand.y+cand.h <= r.y || r.y+r.h <= cand.y)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function pickTileAt(px, py) {
+    // pick placed tile (topmost last)
+    for (let i = placed.length-1; i>=0; i--) {
+      const r = tileRectInBoard(placed[i]);
+      if (px >= r.x && px <= r.x+r.w && py >= r.y && py <= r.y+r.h) return placed[i];
+    }
+    return null;
+  }
+
+  // ---------- Palette layout ----------
+  function paletteTiles() {
+    // returns list of {s, x, y, w, h} in pixels for rendering & hit-test
+    const tiles = [];
+    const startX = PALETTE.x + 18;
+    let x = startX, y = PALETTE.y + 18;
+    const maxW = PALETTE.w - 36;
+    const gap = 14;
+
+    for (const s of SIZES.slice().reverse()) { // show large first
+      const w = s*CELL, h = s*CELL;
+      if (x + w > startX + maxW) { x = startX; y += 110; }
+      tiles.push({ s, x, y, w, h });
+      x += w + gap;
+    }
+    return tiles;
+  }
+
+  function pickPaletteAt(px, py) {
+    for (const t of paletteTiles()) {
+      if (px >= t.x && px <= t.x+t.w && py >= t.y && py <= t.y+t.h) return t;
+    }
+    return null;
+  }
+
+  // ---------- Drawing ----------
+  function drawGrid() {
+    ctx.save();
+    ctx.strokeStyle = "rgba(148,163,184,.18)";
+    ctx.lineWidth = 1;
+
+    // board border
+    ctx.strokeStyle = "rgba(148,163,184,.25)";
+    ctx.strokeRect(BOARD.x-0.5, BOARD.y-0.5, BOARD.w+1, BOARD.h+1);
+
+    // internal grid lines
+    ctx.strokeStyle = "rgba(148,163,184,.12)";
+    for (let i=1;i<BOARD.w/CELL;i++) {
+      const x = BOARD.x + i*CELL + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, BOARD.y); ctx.lineTo(x, BOARD.y+BOARD.h); ctx.stroke();
+    }
+    for (let j=1;j<BOARD.h/CELL;j++) {
+      const y = BOARD.y + j*CELL + 0.5;
+      ctx.beginPath(); ctx.moveTo(BOARD.x, y); ctx.lineTo(BOARD.x+BOARD.w, y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function tileFillStyle(area) {
+    // A small palette based on area (deterministic)
+    const hues = {1:200,4:225,9:155,16:275,25:35};
+    const h = hues[area] ?? 210;
+    return `hsla(${h}, 85%, 60%, 0.22)`;
+  }
+
+  function tileStrokeStyle(area) {
+    const hues = {1:200,4:225,9:155,16:275,25:35};
+    const h = hues[area] ?? 210;
+    return `hsla(${h}, 85%, 70%, 0.70)`;
+  }
+
+  function drawTilePx(x, y, s, opts={}) {
+    const area = s*s;
+    const w = s*CELL, h = s*CELL;
+
+    ctx.save();
+    ctx.fillStyle = opts.fill ?? tileFillStyle(area);
+    ctx.strokeStyle = opts.stroke ?? tileStrokeStyle(area);
+    ctx.lineWidth = opts.lineWidth ?? 2;
+
+    // rounded rect
+    const r = 10;
+    roundRect(ctx, x, y, w, h, r);
+    ctx.fill();
+    ctx.stroke();
+
+    // label
+    ctx.fillStyle = "rgba(226,232,240,.9)";
+    ctx.font = "700 14px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${s}×${s} = ${area}`, x + w/2, y + h/2);
+
+    ctx.restore();
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+  }
+
+  function drawHUD() {
+    ctx.save();
+    ctx.fillStyle = "rgba(226,232,240,.92)";
+    ctx.font = "800 16px system-ui";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText("Board", BOARD.x, 20);
+
+    ctx.fillStyle = "rgba(148,163,184,.9)";
+    ctx.font = "650 12px system-ui";
+    ctx.fillText("Palette", PALETTE.x, 20);
+    ctx.restore();
+  }
+
+  function drawPalette() {
+    // palette border
+    ctx.save();
+    ctx.strokeStyle = "rgba(148,163,184,.25)";
+    ctx.strokeRect(PALETTE.x-0.5, PALETTE.y-0.5, PALETTE.w+1, PALETTE.h+1);
+
+    // tiles
+    for (const t of paletteTiles()) {
+      drawTilePx(t.x, t.y, t.s);
+    }
+    ctx.restore();
+  }
+
+  function drawPlaced() {
+    for (const t of placed) {
+      const r = tileRectInBoard(t);
+      drawTilePx(r.x, r.y, t.s);
+    }
+  }
+
+  function drawGhost() {
+    if (!dragging) return;
+
+    // Determine ghost placement if over board
+    const s = dragging.tile.s;
+    const overBoard = pointInRect(dragging.px, dragging.py, BOARD);
+    if (!overBoard) return;
+
+    const {gx, gy} = boardToGrid(dragging.px - dragging.offx, dragging.py - dragging.offy);
+    const ok = canPlace(s, gx, gy, dragging.source === "board" ? dragging.tile.id : null);
+
+    const p = gridToBoardPx(gx, gy);
+    drawTilePx(p.x, p.y, s, {
+      fill: ok ? "rgba(52,211,153,.18)" : "rgba(251,113,133,.18)",
+      stroke: ok ? "rgba(52,211,153,.85)" : "rgba(251,113,133,.85)",
+      lineWidth: 2
+    });
+
+    ctx.save();
+    ctx.fillStyle = ok ? "rgba(52,211,153,.9)" : "rgba(251,113,133,.9)";
+    ctx.font = "700 12px system-ui";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(ok ? "Release to place" : "Can't place here", BOARD.x, BOARD.y - 10);
+    ctx.restore();
+  }
+
+  function drawDragging() {
+    if (!dragging) return;
+    // draw the tile following pointer (semi-transparent)
+    const s = dragging.tile.s;
+    const x = dragging.px - dragging.offx;
+    const y = dragging.py - dragging.offy;
+
+    ctx.save();
+    drawTilePx(x, y, s, {
+      fill: "rgba(226,232,240,.08)",
+      stroke: "rgba(226,232,240,.45)",
+      lineWidth: 2
+    });
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawHUD();
+    drawGrid();
+    drawPalette();
+    drawPlaced();
+    drawGhost();
+    drawDragging();
+    requestAnimationFrame(draw);
+  }
+
+  // ---------- Events ----------
+  function pointerPos(evt) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width;
+    const sy = canvas.height / rect.height;
+    return { x: (evt.clientX - rect.left) * sx, y: (evt.clientY - rect.top) * sy };
+  }
+
+  canvas.addEventListener("pointerdown", (evt) => {
+    canvas.setPointerCapture(evt.pointerId);
+    const {x, y} = pointerPos(evt);
+
+    // Try pick placed tile first
+    const pt = pickTileAt(x, y);
+    if (pt) {
+      const r = tileRectInBoard(pt);
+      dragging = { source: "board", tile: pt, offx: x - r.x, offy: y - r.y, px: x, py: y };
+      // bring to front
+      placed = placed.filter(t => t.id !== pt.id);
+      placed.push(pt);
+      return;
+    }
+
+    // Then palette
+    const pal = pickPaletteAt(x, y);
+    if (pal) {
+      dragging = { source: "palette", tile: { s: pal.s }, offx: (pal.w/2), offy: (pal.h/2), px: x, py: y };
+      return;
+    }
+  });
+
+  canvas.addEventListener("pointermove", (evt) => {
+    if (!dragging) return;
+    const {x, y} = pointerPos(evt);
+    dragging.px = x; dragging.py = y;
+  });
+
+  canvas.addEventListener("pointerup", (evt) => {
+    if (!dragging) return;
+    const {x, y} = pointerPos(evt);
+
+    const s = dragging.tile.s;
+    const overBoard = pointInRect(x, y, BOARD);
+    if (overBoard) {
+      const {gx, gy} = boardToGrid(x - dragging.offx, y - dragging.offy);
+      const ignoreId = dragging.source === "board" ? dragging.tile.id : null;
+      if (canPlace(s, gx, gy, ignoreId)) {
+        if (dragging.source === "board") {
+          dragging.tile.gx = gx;
+          dragging.tile.gy = gy;
+          placed = placed.filter(t => t.id !== dragging.tile.id);
+          placed.push(dragging.tile);
+        } else {
+          placed.push({ id: crypto.randomUUID(), s, gx, gy });
+        }
+        updateHUD();
+      } else {
+        // if dragged from board and can't place, snap back to previous (do nothing; it was already removed from array earlier)
+        if (dragging.source === "board") {
+          // revert: place it back to a safe place near original by searching nearby
+          const orig = dragging.tile;
+          let found = false;
+          for (let radius=0; radius<8 && !found; radius++) {
+            for (let dx=-radius; dx<=radius && !found; dx++) {
+              for (let dy=-radius; dy<=radius && !found; dy++) {
+                const tx = Math.max(0, Math.min((BOARD.w/CELL)-orig.s, orig.gx + dx));
+                const ty = Math.max(0, Math.min((BOARD.h/CELL)-orig.s, orig.gy + dy));
+                if (canPlace(orig.s, tx, ty, orig.id)) {
+                  orig.gx = tx; orig.gy = ty;
+                  placed.push(orig);
+                  found = true;
+                }
+              }
+            }
+          }
+          if (!found) {
+            // if truly stuck, drop it (rare)
+          }
+        }
+        flashStatus("Invalid placement.", "bad", 700);
+        updateHUD();
+      }
+    } else {
+      // Released outside board: if from board, remove it.
+      if (dragging.source === "board") {
+        flashStatus("Tile removed.", "good", 650);
+        updateHUD();
+      }
+    }
+
+    dragging = null;
+  });
+
+  canvas.addEventListener("dblclick", (evt) => {
+    const {x, y} = pointerPos(evt);
+    const t = pickTileAt(x, y);
+    if (t) {
+      placed = placed.filter(p => p.id !== t.id);
+      updateHUD();
+      flashStatus("Tile removed.", "good", 650);
+    }
+  });
+
+  // Keyboard shortcuts
+  window.addEventListener("keydown", (evt) => {
+    if (evt.key.toLowerCase() === "r") clearBoard();
+    if (evt.key.toLowerCase() === "n") { clearBoard(); newTarget(); }
+  });
+
+  // Buttons
+  document.getElementById("newBtn").addEventListener("click", () => { clearBoard(); newTarget(); });
+  document.getElementById("clearBtn").addEventListener("click", () => clearBoard());
+
+  // init
+  newTarget();
+  draw();
+})();
+</script>
+</body>
+</html>
