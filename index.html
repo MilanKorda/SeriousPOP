@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SeriousPOP – Module 1B: Fill the Area with Squares</title>
+  <style>
+    :root{
+      --bg:#f3f5fb;
+      --panel:#ffffff;
+      --panel2:#fbfcff;
+      --text:#1f2937;
+      --muted:#5b6472;
+      --line:rgba(31,41,55,.14);
+
+      /* Pastel accents */
+      --a1:#a7c7ff;   /* blue */
+      --a2:#b9f6d1;   /* green */
+      --a3:#ffd2e1;   /* pink */
+      --a4:#ffe9b3;   /* yellow */
+      --good:#16a34a;
+      --bad:#ef4444;
+    }
+
+    html,body{height:100%;margin:0;background:
+      radial-gradient(900px 500px at 15% 0%, rgba(167,199,255,.55), transparent 55%),
+      radial-gradient(900px 500px at 90% 20%, rgba(185,246,209,.45), transparent 55%),
+      radial-gradient(900px 500px at 60% 90%, rgba(255,210,225,.40), transparent 55%),
+      var(--bg);
+      color:var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    }
+
+    .wrap{max-width:1150px;margin:0 auto;padding:18px;}
+    header{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+    h1{margin:0;font-size:18px;font-weight:850;letter-spacing:.2px;}
+    .sub{margin-top:4px;color:var(--muted);font-size:13px;line-height:1.35;max-width:760px;}
+    .btn{
+      cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.75);
+      color:var(--text);padding:10px 12px;border-radius:14px;font-weight:800;font-size:13px;
+      box-shadow:0 10px 20px rgba(17,24,39,.08);
+    }
+    .btn:hover{transform: translateY(-1px);}
+    .btn:active{transform: translateY(0px);}
+    .grid{display:grid;grid-template-columns: 1fr 320px; gap:14px;}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.80));
+      border:1px solid var(--line);
+      border-radius:18px; overflow:hidden;
+      box-shadow:0 18px 45px rgba(17,24,39,.10);
+      backdrop-filter: blur(6px);
+    }
+    .card h2{margin:0;padding:14px 14px 0 14px;font-size:13px;color:var(--muted);font-weight:850;}
+    .body{padding:14px;}
+    canvas{width:100%;height:auto;display:block;background:linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35));}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .pill{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.72);
+      padding:8px 10px;border-radius:999px;font-size:12px;color:var(--muted);
+      box-shadow:0 10px 18px rgba(17,24,39,.06);
+    }
+    .pill strong{color:var(--text);font-weight:900;}
+    .status{font-weight:950;}
+    .status.good{color:var(--good);}
+    .status.bad{color:var(--bad);}
+
+    .eq{
+      margin-top:12px;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px dashed rgba(31,41,55,.22);
+      background:rgba(255,255,255,.62);
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+      min-height:46px;
+    }
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid rgba(31,41,55,.14);
+      background:rgba(255,255,255,.85);
+      font-weight:900;font-size:12px;
+    }
+    .chip small{color:var(--muted);font-weight:850;}
+
+    .note{color:var(--muted);font-size:12px;line-height:1.4;}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;padding:2px 6px;border-radius:7px;
+         border:1px solid rgba(31,41,55,.18);background:rgba(255,255,255,.75);color:#334155;}
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>SeriousPOP – Module 1B: Fill the Area with Squares</h1>
+        <div class="sub">
+          The <strong>board area equals the target integer</strong>. Fill the rectangle completely using square tiles.
+          Position now matters: tiles can’t overlap and you must leave no gaps.
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="newBtn">New board</button>
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Puzzle board</h2>
+        <canvas id="game" width="780" height="560"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Progress</h2>
+        <div class="body">
+          <div class="row" style="margin-bottom:10px">
+            <div class="pill">Target: <strong id="targetTxt">—</strong></div>
+            <div class="pill">Filled: <strong id="filledTxt">0</strong></div>
+            <div class="pill">Remaining: <strong id="remTxt">—</strong></div>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <div class="pill">Board: <strong id="dimsTxt">—</strong></div>
+            <div class="pill">Status: <span id="statusTxt" class="status">Keep going</span></div>
+          </div>
+
+          <div class="eq" id="eqStrip" aria-label="Decomposition equation strip"></div>
+
+          <div class="note" style="margin-top:12px">
+            Controls: drag tiles from the palette onto the board. Double-click a placed tile to remove it.
+            Keys: <span class="kbd">N</span> new board, <span class="kbd">R</span> clear.
+          </div>
+          <div class="note" style="margin-top:8px">
+            Tip: start with a big square, then fill the remaining space with smaller squares.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  // Pastel tile colors by area (side^2)
+  const TILE_COLORS = {
+    1:  { fill:"rgba(167,199,255,.55)", stroke:"rgba(105,145,220,.65)" },
+    4:  { fill:"rgba(185,246,209,.55)", stroke:"rgba(88,186,130,.65)" },
+    9:  { fill:"rgba(255,210,225,.62)", stroke:"rgba(222,120,160,.60)" },
+    16: { fill:"rgba(255,233,179,.62)", stroke:"rgba(220,170,60,.55)" },
+    25: { fill:"rgba(210,220,255,.62)", stroke:"rgba(120,140,220,.55)" },
+    36: { fill:"rgba(210,250,245,.60)", stroke:"rgba(70,170,160,.55)" },
+    49: { fill:"rgba(255,220,200,.62)", stroke:"rgba(220,120,80,.55)" },
+  };
+
+  // Dynamic board size (grid cells)
+  let BW = 10, BH = 8;
+
+  const CELL = 26;         // size of one unit cell in pixels
+  const PAD = 16;
+  const HUD_H = 54;
+
+  // These are computed each time board changes
+  let BOARD = {x:PAD, y:PAD+HUD_H, w:BW*CELL, h:BH*CELL};
+  let PALETTE = {x:0,y:0,w:0,h:0};
+
+  // Square sizes available (in cells)
+  let SIZES = [1,2,3,4,5];
+
+  let placed = [];   // {id,s,gx,gy}
+  let dragging = null; // {source:'palette'|'board', tile, offx, offy, px, py}
+  let solvedFlash = 0;
+
+  const elTarget = document.getElementById("targetTxt");
+  const elFilled = document.getElementById("filledTxt");
+  const elRem = document.getElementById("remTxt");
+  const elDims = document.getElementById("dimsTxt");
+  const elStatus = document.getElementById("statusTxt");
+  const elEq = document.getElementById("eqStrip");
+
+  const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+
+  function recomputeRegions() {
+    BOARD = { x: PAD, y: PAD+HUD_H, w: BW*CELL, h: BH*CELL };
+    const rightX = BOARD.x + BOARD.w + 18;
+    PALETTE = { x: rightX, y: BOARD.y, w: canvas.width - rightX - PAD, h: BOARD.h };
+  }
+
+  function newBoard() {
+    // Choose a rectangle and adjust palette max tile to fit nicely
+    BW = rnd(7,12);
+    BH = rnd(6,10);
+
+    // Ensure palette has sensible max square
+    const maxSide = Math.min(7, Math.max(4, Math.min(BW, BH)));
+    SIZES = [];
+    for (let s=1; s<=maxSide; s++) SIZES.push(s);
+
+    placed = [];
+    solvedFlash = 0;
+    recomputeRegions();
+    updateHUD();
+  }
+
+  function clearBoard() {
+    placed = [];
+    solvedFlash = 0;
+    updateHUD();
+  }
+
+  function target() { return BW * BH; }
+
+  function filledCells() {
+    return placed.reduce((acc,t) => acc + t.s*t.s, 0);
+  }
+
+  function updateEquationStrip() {
+    elEq.innerHTML = "";
+    if (placed.length === 0) {
+      const span = document.createElement("span");
+      span.className = "note";
+      span.textContent = "Your decomposition will appear here (e.g., 2×3² + 1×2² + …).";
+      elEq.appendChild(span);
+      return;
+    }
+    // Count sizes
+    const counts = new Map();
+    for (const t of placed) counts.set(t.s, (counts.get(t.s)||0) + 1);
+    const sizes = Array.from(counts.keys()).sort((a,b)=>b-a);
+
+    sizes.forEach((s, idx) => {
+      const c = counts.get(s);
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.innerHTML = `<span>${c}×${s}<sup>2</sup></span><small>= ${c*s*s}</small>`;
+      elEq.appendChild(chip);
+
+      if (idx < sizes.length - 1) {
+        const plus = document.createElement("span");
+        plus.style.fontWeight = "950";
+        plus.textContent = "+";
+        elEq.appendChild(plus);
+      }
+    });
+  }
+
+  function updateHUD() {
+    const t = target();
+    const f = filledCells();
+    elTarget.textContent = String(t);
+    elFilled.textContent = String(f);
+    elRem.textContent = String(Math.max(0, t - f));
+    elDims.textContent = `${BW} × ${BH}`;
+
+    elStatus.classList.remove("good","bad");
+    if (f === t) {
+      // BUT also require no gaps/overlaps => ensured by placement rules; if filled equals target, it must cover entire area.
+      elStatus.textContent = "Solved ✓";
+      elStatus.classList.add("good");
+      solvedFlash = 18;
+    } else if (f > t) {
+      elStatus.textContent = "Too high";
+      elStatus.classList.add("bad");
+    } else {
+      elStatus.textContent = "Keep going";
+    }
+    updateEquationStrip();
+  }
+
+  function pointInRect(px, py, r) {
+    return px >= r.x && px <= r.x+r.w && py >= r.y && py <= r.y+r.h;
+  }
+
+  function boardToGrid(px, py) {
+    return { gx: Math.floor((px - BOARD.x)/CELL), gy: Math.floor((py - BOARD.y)/CELL) };
+  }
+  function gridToBoardPx(gx, gy) {
+    return { x: BOARD.x + gx*CELL, y: BOARD.y + gy*CELL };
+  }
+
+  function canPlace(s, gx, gy, ignoreId=null) {
+    if (gx < 0 || gy < 0) return false;
+    if (gx + s > BW) return false;
+    if (gy + s > BH) return false;
+
+    for (const t of placed) {
+      if (ignoreId && t.id === ignoreId) continue;
+      const overlap = !(gx+s <= t.gx || t.gx+t.s <= gx || gy+s <= t.gy || t.gy+t.s <= gy);
+      if (overlap) return false;
+    }
+    return true;
+  }
+
+  function tileRectInBoard(t) {
+    const p = gridToBoardPx(t.gx, t.gy);
+    return { x:p.x, y:p.y, w:t.s*CELL, h:t.s*CELL };
+  }
+
+  function pickPlaced(px, py) {
+    for (let i=placed.length-1;i>=0;i--) {
+      const r = tileRectInBoard(placed[i]);
+      if (px>=r.x && px<=r.x+r.w && py>=r.y && py<=r.y+r.h) return placed[i];
+    }
+    return null;
+  }
+
+  function paletteTiles() {
+    const tiles = [];
+    const gap = 12;
+    const startX = PALETTE.x + 14;
+    let x = startX, y = PALETTE.y + 14;
+    const maxW = Math.max(0, PALETTE.w - 28);
+
+    for (const s of SIZES.slice().reverse()) {
+      const w = s*CELL, h = s*CELL;
+      if (x + w > startX + maxW) { x = startX; y += 110; }
+      tiles.push({s, x, y, w, h});
+      x += w + gap;
+    }
+    return tiles;
+  }
+
+  function pickPalette(px, py) {
+    for (const t of paletteTiles()) {
+      if (px>=t.x && px<=t.x+t.w && py>=t.y && py<=t.y+t.h) return t;
+    }
+    return null;
+  }
+
+  // Drawing helpers
+  function roundRect(ctx,x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function drawTilePx(x,y,s,opts={}) {
+    const area = s*s;
+    const colors = TILE_COLORS[area] || {fill:"rgba(167,199,255,.55)", stroke:"rgba(105,145,220,.65)"};
+    const fill = opts.fill ?? colors.fill;
+    const stroke = opts.stroke ?? colors.stroke;
+
+    const w = s*CELL, h = s*CELL;
+    ctx.save();
+    roundRect(ctx,x,y,w,h,12);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Soft inner grid hint for larger tiles
+    if (s >= 2) {
+      ctx.strokeStyle = "rgba(31,41,55,.10)";
+      ctx.lineWidth = 1;
+      for (let i=1;i<s;i++){
+        ctx.beginPath();
+        ctx.moveTo(x + i*CELL + 0.5, y + 6);
+        ctx.lineTo(x + i*CELL + 0.5, y + h - 6);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x + 6, y + i*CELL + 0.5);
+        ctx.lineTo(x + w - 6, y + i*CELL + 0.5);
+        ctx.stroke();
+      }
+    }
+
+    // Label
+    ctx.fillStyle = "rgba(31,41,55,.88)";
+    ctx.font = "900 13px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${s}² = ${area}`, x+w/2, y+h/2);
+    ctx.restore();
+  }
+
+  function drawBoard() {
+    ctx.save();
+    // Board border
+    ctx.strokeStyle = "rgba(31,41,55,.22)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, BOARD.x-2, BOARD.y-2, BOARD.w+4, BOARD.h+4, 18);
+    ctx.stroke();
+
+    // Grid lines (very light)
+    ctx.strokeStyle = "rgba(31,41,55,.08)";
+    ctx.lineWidth = 1;
+    for (let i=1;i<BW;i++){
+      const x = BOARD.x + i*CELL + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, BOARD.y); ctx.lineTo(x, BOARD.y+BOARD.h); ctx.stroke();
+    }
+    for (let j=1;j<BH;j++){
+      const y = BOARD.y + j*CELL + 0.5;
+      ctx.beginPath(); ctx.moveTo(BOARD.x, y); ctx.lineTo(BOARD.x+BOARD.w, y); ctx.stroke();
+    }
+
+    // Solved glow
+    if (solvedFlash > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(0.35, solvedFlash/30);
+      ctx.fillStyle = "rgba(185,246,209,.75)";
+      roundRect(ctx, BOARD.x, BOARD.y, BOARD.w, BOARD.h, 16);
+      ctx.fill();
+      ctx.restore();
+      solvedFlash--;
+    }
+
+    ctx.restore();
+  }
+
+  function drawPalette() {
+    ctx.save();
+    // Palette panel border
+    ctx.strokeStyle = "rgba(31,41,55,.14)";
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, PALETTE.x-2, PALETTE.y-2, PALETTE.w+4, PALETTE.h+4, 18);
+    ctx.stroke();
+
+    // Title
+    ctx.fillStyle = "rgba(31,41,55,.70)";
+    ctx.font = "900 12px system-ui";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText("Palette (drag squares)", PALETTE.x + 12, PALETTE.y - 24);
+
+    for (const t of paletteTiles()) drawTilePx(t.x, t.y, t.s);
+    ctx.restore();
+  }
+
+  function drawPlaced() {
+    for (const t of placed) {
+      const r = tileRectInBoard(t);
+      drawTilePx(r.x, r.y, t.s);
+    }
+  }
+
+  function drawGhost() {
+    if (!dragging) return;
+    const s = dragging.tile.s;
+    if (!pointInRect(dragging.px, dragging.py, BOARD)) return;
+
+    const {gx, gy} = boardToGrid(dragging.px - dragging.offx, dragging.py - dragging.offy);
+    const ignore = dragging.source === "board" ? dragging.tile.id : null;
+    const ok = canPlace(s, gx, gy, ignore);
+
+    const p = gridToBoardPx(gx, gy);
+    drawTilePx(p.x, p.y, s, {
+      fill: ok ? "rgba(185,246,209,.55)" : "rgba(255,210,225,.60)",
+      stroke: ok ? "rgba(88,186,130,.70)" : "rgba(222,120,160,.70)"
+    });
+
+    ctx.save();
+    ctx.fillStyle = "rgba(31,41,55,.75)";
+    ctx.font = "850 12px system-ui";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(ok ? "Release to place" : "Doesn't fit / overlaps", BOARD.x, BOARD.y - 10);
+    ctx.restore();
+  }
+
+  function drawDragging() {
+    if (!dragging) return;
+    const s = dragging.tile.s;
+    const x = dragging.px - dragging.offx;
+    const y = dragging.py - dragging.offy;
+    drawTilePx(x, y, s, { fill:"rgba(255,255,255,.50)", stroke:"rgba(31,41,55,.35)" });
+  }
+
+  function drawHudText() {
+    ctx.save();
+    ctx.fillStyle = "rgba(31,41,55,.80)";
+    ctx.font = "950 16px system-ui";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(`Fill the ${BW}×${BH} board  (Target = ${target()})`, BOARD.x, PAD);
+
+    ctx.fillStyle = "rgba(31,41,55,.60)";
+    ctx.font = "800 12px system-ui";
+    ctx.fillText("Double-click a tile to remove it.", BOARD.x, PAD + 22);
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawHudText();
+    drawBoard();
+    drawPalette();
+    drawPlaced();
+    drawGhost();
+    drawDragging();
+    requestAnimationFrame(draw);
+  }
+
+  // Input helpers
+  function pointerPos(evt) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width;
+    const sy = canvas.height / rect.height;
+    return { x: (evt.clientX - rect.left) * sx, y: (evt.clientY - rect.top) * sy };
+  }
+
+  canvas.addEventListener("pointerdown", (evt) => {
+    canvas.setPointerCapture(evt.pointerId);
+    const {x,y} = pointerPos(evt);
+
+    // Pick placed first
+    const p = pickPlaced(x,y);
+    if (p) {
+      const r = tileRectInBoard(p);
+      dragging = { source:"board", tile:p, offx:x-r.x, offy:y-r.y, px:x, py:y };
+      // bring to front
+      placed = placed.filter(t => t.id !== p.id);
+      placed.push(p);
+      return;
+    }
+
+    // Then palette
+    const pal = pickPalette(x,y);
+    if (pal) {
+      dragging = { source:"palette", tile:{s:pal.s}, offx:(pal.w/2), offy:(pal.h/2), px:x, py:y };
+      return;
+    }
+  });
+
+  canvas.addEventListener("pointermove", (evt) => {
+    if (!dragging) return;
+    const {x,y} = pointerPos(evt);
+    dragging.px = x; dragging.py = y;
+  });
+
+  canvas.addEventListener("pointerup", (evt) => {
+    if (!dragging) return;
+    const {x,y} = pointerPos(evt);
+
+    const s = dragging.tile.s;
+
+    if (pointInRect(x,y,BOARD)) {
+      const {gx, gy} = boardToGrid(x - dragging.offx, y - dragging.offy);
+      const ignore = dragging.source === "board" ? dragging.tile.id : null;
+      if (canPlace(s, gx, gy, ignore)) {
+        if (dragging.source === "board") {
+          dragging.tile.gx = gx; dragging.tile.gy = gy;
+          placed = placed.filter(t => t.id !== dragging.tile.id);
+          placed.push(dragging.tile);
+        } else {
+          placed.push({ id: crypto.randomUUID(), s, gx, gy });
+        }
+        updateHUD();
+      } else {
+        // If dragging from board and cannot place, keep it where it was (it is still in placed already)
+        updateHUD();
+      }
+    } else {
+      // Drop outside board: if from board, remove it (acts like trash)
+      if (dragging.source === "board") {
+        placed = placed.filter(t => t.id !== dragging.tile.id);
+        updateHUD();
+      }
+    }
+    dragging = null;
+  });
+
+  canvas.addEventListener("dblclick", (evt) => {
+    const {x,y} = pointerPos(evt);
+    const p = pickPlaced(x,y);
+    if (p) {
+      placed = placed.filter(t => t.id !== p.id);
+      updateHUD();
+    }
+  });
+
+  // Buttons + keys
+  document.getElementById("newBtn").addEventListener("click", newBoard);
+  document.getElementById("clearBtn").addEventListener("click", clearBoard);
+  window.addEventListener("keydown", (evt) => {
+    const k = evt.key.toLowerCase();
+    if (k === "n") newBoard();
+    if (k === "r") clearBoard();
+  });
+
+  // Init
+  recomputeRegions();
+  newBoard();
+  draw();
+})();
+</script>
+</body>
+</html>
