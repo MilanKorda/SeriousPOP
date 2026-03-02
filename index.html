@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SeriousPOP – Module 1 (Kiosk): Decompose into Squares</title>
+  <style>
+    :root{
+      --bg:#070a16;
+      --panel:#0d1430;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --good:#34d399;
+      --bad:#fb7185;
+      --line:rgba(255,255,255,.12);
+    }
+    html,body{height:100%;margin:0;background:radial-gradient(900px 500px at 20% 0%, rgba(96,165,250,.15), transparent 55%),
+                                                radial-gradient(900px 500px at 90% 20%, rgba(52,211,153,.10), transparent 55%),
+                                                var(--bg);
+              color:var(--text); font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px;}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+    h1{margin:0;font-size:18px;font-weight:800;letter-spacing:.2px;}
+    .sub{color:var(--muted);font-size:13px;margin-top:4px;max-width:760px;line-height:1.35;}
+    .btn{cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);
+         padding:10px 12px;border-radius:14px;font-weight:750;font-size:13px;}
+    .btn:hover{border-color:rgba(96,165,250,.65);}
+    .btn:active{transform:translateY(1px);}
+    .grid{display:grid;grid-template-columns: 1.1fr .9fr; gap:14px;}
+    .card{background:rgba(13,20,48,.78); border:1px solid var(--line); border-radius:18px; overflow:hidden;
+          box-shadow:0 18px 40px rgba(0,0,0,.35);}
+    .card h2{margin:0;padding:14px 14px 0 14px;font-size:13px;color:var(--muted);font-weight:750;}
+    .body{padding:14px;}
+    .bigTarget{display:flex;align-items:center;justify-content:center;gap:18px; padding:18px; border-radius:16px;
+               background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08);}
+    .bigTarget .label{color:var(--muted);font-weight:750;font-size:13px;letter-spacing:.2px;}
+    .bigTarget .value{font-size:46px;font-weight:900;letter-spacing:.8px;}
+    .bigTarget .eq{font-size:30px;color:rgba(229,231,235,.85);font-weight:900;}
+    .bigTarget .sum{font-size:40px;font-weight:900;}
+    .statusRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+    .pill{border:1px solid var(--line);background:rgba(0,0,0,.18);padding:8px 10px;border-radius:999px;
+          font-size:12px;color:var(--muted);}
+    .pill strong{color:var(--text);}
+    .status{font-weight:900;}
+    .status.good{color:var(--good);}
+    .status.bad{color:var(--bad);}
+    .palette{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:12px;}
+    .tileBtn{
+      user-select:none;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.03);
+      padding:12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      min-height:74px;
+    }
+    .swatch{
+      width:56px;height:56px;border-radius:14px;
+      background:rgba(255,255,255,.04);
+      display:grid;place-items:center;
+      border:1px solid rgba(255,255,255,.10);
+      position:relative;
+      overflow:hidden;
+    }
+    .swatch:before{
+      content:"";
+      position:absolute;inset:-20%;
+      background:conic-gradient(from 180deg, rgba(96,165,250,.18), rgba(52,211,153,.10), rgba(251,113,133,.10), rgba(96,165,250,.18));
+      filter:blur(14px);
+      opacity:.75;
+      transform: rotate(18deg);
+    }
+    .swatch canvas{position:relative;z-index:1;}
+    .tileMeta{display:flex;flex-direction:column;gap:4px;}
+    .tileMeta .name{font-weight:900;}
+    .tileMeta .hint{color:var(--muted);font-size:12px;}
+    .tileCount{display:flex;align-items:center;gap:8px;font-weight:900;}
+    .smallBtn{
+      cursor:pointer;border:1px solid rgba(255,255,255,.16);
+      background:rgba(0,0,0,.18);color:var(--text);
+      width:34px;height:34px;border-radius:12px;
+      font-weight:900;font-size:16px;display:grid;place-items:center;
+    }
+    .smallBtn:hover{border-color:rgba(96,165,250,.65);}
+    .smallBtn:active{transform:translateY(1px);}
+    .countBox{min-width:28px;text-align:center;}
+    .equationStrip{
+      margin-top:12px;padding:14px;border-radius:16px;
+      border:1px dashed rgba(255,255,255,.18);
+      background:rgba(0,0,0,.14);
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    }
+    .term{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.03);
+      font-weight:900;
+    }
+    .term .x{color:var(--muted);font-weight:800;}
+    .term .badge{
+      font-size:12px;color:var(--muted);font-weight:800;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18);
+      padding:3px 8px;border-radius:999px;
+    }
+    .note{color:var(--muted);font-size:12px;line-height:1.4;}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;padding:2px 6px;border-radius:7px;
+         border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);color:#cbd5e1;}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr;} .palette{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>SeriousPOP – Module 1 (Museum / Kiosk)</h1>
+        <div class="sub">
+          Tap <span class="kbd">+</span> to add square numbers and decompose the target as a sum of squares.
+          Designed for touch screens: big buttons, no “board placement” distraction.
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn" id="newBtn">New target</button>
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Challenge</h2>
+        <div class="body">
+          <div class="bigTarget" aria-live="polite">
+            <div>
+              <div class="label">TARGET</div>
+              <div class="value" id="targetTxt">—</div>
+            </div>
+            <div class="eq">=</div>
+            <div>
+              <div class="label">YOUR SUM</div>
+              <div class="sum" id="sumTxt">0</div>
+            </div>
+          </div>
+
+          <div class="statusRow">
+            <div class="pill">Remaining: <strong id="remTxt">—</strong></div>
+            <div class="pill">Status: <span class="status" id="statusTxt">Keep going</span></div>
+            <div class="pill">Hint: try squares ≤ <strong id="maxSquareTxt">25</strong></div>
+          </div>
+
+          <div class="equationStrip" id="eqStrip" aria-label="Equation strip"></div>
+
+          <div class="note" style="margin-top:12px;">
+            Tips: Use <span class="kbd">N</span> for a new target, <span class="kbd">R</span> to clear.
+            Press <span class="kbd">Enter</span> when solved to jump to the next target.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Square tiles</h2>
+        <div class="body">
+          <div class="palette" id="palette"></div>
+          <div class="note" style="margin-top:12px;">
+            Museum mode idea: open in full-screen (browser kiosk) so it feels like a standalone exhibit.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const SIZES = [1,2,3,4,5]; // n -> n^2
+  const MAX_AREA = Math.max(...SIZES.map(s => s*s));
+
+  let counts = Object.fromEntries(SIZES.map(s => [s, 0]));
+  let target = 0;
+
+  const elTarget = document.getElementById("targetTxt");
+  const elSum = document.getElementById("sumTxt");
+  const elRem = document.getElementById("remTxt");
+  const elStatus = document.getElementById("statusTxt");
+  const elEq = document.getElementById("eqStrip");
+  const elPalette = document.getElementById("palette");
+  document.getElementById("maxSquareTxt").textContent = String(MAX_AREA);
+
+  const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+
+  function sumNow() {
+    let s = 0;
+    for (const n of SIZES) s += counts[n] * (n*n);
+    return s;
+  }
+
+  function setStatus() {
+    const s = sumNow();
+    const rem = target - s;
+
+    elTarget.textContent = String(target);
+    elSum.textContent = String(s);
+    elRem.textContent = String(Math.max(0, rem));
+
+    elStatus.classList.remove("good","bad");
+    if (s === target) { elStatus.textContent = "Solved ✓"; elStatus.classList.add("good"); }
+    else if (s > target) { elStatus.textContent = "Too high"; elStatus.classList.add("bad"); }
+    else { elStatus.textContent = "Keep going"; }
+  }
+
+  function renderEquation() {
+    elEq.innerHTML = "";
+    const terms = [];
+    for (const n of SIZES.slice().reverse()) {
+      if (counts[n] > 0) terms.push({n, c: counts[n], a: n*n});
+    }
+    if (terms.length === 0) {
+      const empty = document.createElement("span");
+      empty.className = "note";
+      empty.textContent = "Add tiles on the right to build your decomposition.";
+      elEq.appendChild(empty);
+      return;
+    }
+    terms.forEach((t, i) => {
+      const term = document.createElement("span");
+      term.className = "term";
+      term.innerHTML = `<span>${t.c}</span><span class="x">×</span><span>${t.n}²</span><span class="badge">=${t.c*t.a}</span>`;
+      elEq.appendChild(term);
+      if (i < terms.length - 1) {
+        const plus = document.createElement("span");
+        plus.style.color = "rgba(229,231,235,.85)";
+        plus.style.fontWeight = "900";
+        plus.textContent = "+";
+        elEq.appendChild(plus);
+      }
+    });
+  }
+
+  function updateAll() {
+    for (const n of SIZES) {
+      const box = document.querySelector(`[data-count-for="${n}"]`);
+      if (box) box.textContent = String(counts[n]);
+    }
+    renderEquation();
+    setStatus();
+  }
+
+  function clear() {
+    counts = Object.fromEntries(SIZES.map(s => [s, 0]));
+    updateAll();
+  }
+
+  function newTarget() {
+    let t = 0;
+    const k = rnd(2,6);
+    for (let i=0;i<k;i++) {
+      const n = SIZES[rnd(0,SIZES.length-1)];
+      t += n*n;
+    }
+    if (Math.random() < 0.25) t += rnd(0,3);
+    target = t;
+    clear();
+  }
+
+  function tilePreviewCanvas(n) {
+    const c = document.createElement("canvas");
+    c.width = 44; c.height = 44;
+    const ctx = c.getContext("2d");
+    const s = n;
+    const cell = Math.floor(36 / s);
+    const pad = Math.floor((44 - cell*s)/2);
+    ctx.fillStyle = "rgba(96,165,250,.25)";
+    ctx.strokeStyle = "rgba(229,231,235,.40)";
+    ctx.lineWidth = 1;
+    for (let y=0;y<s;y++){
+      for (let x=0;x<s;x++){
+        const px = pad + x*cell;
+        const py = pad + y*cell;
+        roundRect(ctx, px, py, cell-2, cell-2, 4);
+        ctx.fill(); ctx.stroke();
+      }
+    }
+    ctx.fillStyle = "rgba(229,231,235,.9)";
+    ctx.font = "900 11px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(`${n}²`, 22, 42);
+    return c;
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+  }
+
+  function buildPalette() {
+    elPalette.innerHTML = "";
+    for (const n of SIZES.slice().reverse()) {
+      const area = n*n;
+      const row = document.createElement("div");
+      row.className = "tileBtn";
+
+      const sw = document.createElement("div");
+      sw.className = "swatch";
+      sw.appendChild(tilePreviewCanvas(n));
+
+      const meta = document.createElement("div");
+      meta.className = "tileMeta";
+      meta.innerHTML = `<div class="name">${n}² = ${area}</div><div class="hint">Tap + to add, − to remove</div>`;
+
+      const controls = document.createElement("div");
+      controls.className = "tileCount";
+      controls.innerHTML = `
+        <button class="smallBtn" data-dec="${n}" aria-label="decrease">−</button>
+        <div class="countBox" data-count-for="${n}">0</div>
+        <button class="smallBtn" data-inc="${n}" aria-label="increase">+</button>
+      `;
+
+      row.appendChild(sw);
+      row.appendChild(meta);
+      row.appendChild(controls);
+      elPalette.appendChild(row);
+    }
+
+    elPalette.addEventListener("click", (e) => {
+      const inc = e.target?.getAttribute?.("data-inc");
+      const dec = e.target?.getAttribute?.("data-dec");
+      if (inc) { counts[inc]++; updateAll(); }
+      if (dec) { counts[dec] = Math.max(0, counts[dec]-1); updateAll(); }
+    });
+  }
+
+  document.getElementById("newBtn").addEventListener("click", newTarget);
+  document.getElementById("clearBtn").addEventListener("click", clear);
+  window.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    if (k === "n") newTarget();
+    if (k === "r") clear();
+    if (k === "enter" && sumNow() === target) newTarget();
+  });
+
+  buildPalette();
+  newTarget();
+})();
+</script>
+</body>
+</html>
