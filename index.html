@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SeriousPOP: Integer Sum of Squares demo (Pastel)</title>
+  <style>
+    :root{
+      --bg:#f3f5fb;
+      --text:#1f2937;
+      --muted:#5b6472;
+      --line:rgba(31,41,55,.14);
+      --good:#16a34a;
+      --bad:#ef4444;
+      --warn:#f59e0b;
+    }
+    html,body{height:100%;margin:0;background:
+      radial-gradient(900px 500px at 15% 0%, rgba(167,199,255,.55), transparent 55%),
+      radial-gradient(900px 500px at 90% 20%, rgba(185,246,209,.45), transparent 55%),
+      radial-gradient(900px 500px at 60% 90%, rgba(255,210,225,.40), transparent 55%),
+      var(--bg);
+      color:var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    }
+    .wrap{max-width:1220px;margin:0 auto;padding:18px;}
+    header{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+    h1{margin:0;font-size:18px;font-weight:950;letter-spacing:.2px;}
+    .sub{margin-top:4px;color:var(--muted);font-size:13px;line-height:1.35;max-width:880px;}
+    .btn{
+      cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.78);
+      color:var(--text);padding:10px 12px;border-radius:14px;font-weight:950;font-size:13px;
+      box-shadow:0 10px 20px rgba(17,24,39,.08);
+    }
+    .btn:hover{transform: translateY(-1px);}
+    .btn:active{transform: translateY(0px);}
+    .btn.primary{border-color:rgba(22,163,74,.25); background:rgba(185,246,209,.55);}
+    .btn:disabled{opacity:.55; cursor:not-allowed; transform:none;}
+    .grid{display:grid;grid-template-columns: 1fr 360px; gap:14px;}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.80));
+      border:1px solid var(--line);
+      border-radius:18px; overflow:hidden;
+      box-shadow:0 18px 45px rgba(17,24,39,.10);
+      backdrop-filter: blur(6px);
+      position:relative;
+    }
+    .card h2{margin:0;padding:14px 14px 0 14px;font-size:13px;color:var(--muted);font-weight:950;}
+    .body{padding:14px;}
+    canvas{width:100%;height:auto;display:block;background:linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35));}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .pill{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.75);
+      padding:8px 10px;border-radius:999px;font-size:12px;color:var(--muted);
+      box-shadow:0 10px 18px rgba(17,24,39,.06);
+      display:inline-flex;gap:8px;align-items:center;
+    }
+    .pill strong{color:var(--text);font-weight:1000;}
+    .status{font-weight:1100;}
+    .status.good{color:var(--good);}
+    .status.bad{color:var(--bad);}
+    .status.warn{color:var(--warn);}
+    .eq{
+      margin-top:12px;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px dashed rgba(31,41,55,.22);
+      background:rgba(255,255,255,.62);
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+      min-height:46px;
+    }
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid rgba(31,41,55,.14);
+      background:rgba(255,255,255,.88);
+      font-weight:1000;font-size:12px;
+    }
+    .chip small{color:var(--muted);font-weight:950;}
+    .note{color:var(--muted);font-size:12px;line-height:1.4;}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;padding:2px 6px;border-radius:7px;
+         border:1px solid rgba(31,41,55,.18);background:rgba(255,255,255,.75);color:#334155;}
+
+    .overlay{
+      position:absolute; inset:0;
+      background:rgba(255,255,255,.75);
+      display:none;
+      align-items:center; justify-content:center;
+      backdrop-filter: blur(6px);
+      padding:18px;
+    }
+    .overlay.show{display:flex;}
+    .modal{
+      width:min(640px, 95vw);
+      border-radius:20px;
+      border:1px solid rgba(31,41,55,.18);
+      background:rgba(255,255,255,.92);
+      box-shadow:0 30px 70px rgba(17,24,39,.18);
+      padding:16px;
+    }
+    .modal h3{margin:0 0 6px 0;font-size:18px;font-weight:1100;}
+    .modal p{margin:0 0 12px 0;color:var(--muted);line-height:1.4;}
+    .stars{display:flex;gap:6px;margin:10px 0 14px 0;font-size:20px;}
+    .stars span{opacity:.25;}
+    .stars span.on{opacity:1;}
+    .modal .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr;} }
+  
+    .solutionbar{
+      position:absolute;
+      top:12px; right:12px;
+      display:none;
+      gap:10px; align-items:center; flex-wrap:wrap;
+      padding:10px 10px;
+      border-radius:16px;
+      border:1px solid rgba(31,41,55,.16);
+      background:rgba(255,255,255,.86);
+      box-shadow:0 16px 35px rgba(17,24,39,.14);
+      max-width: min(520px, 95%);
+      z-index: 30;
+    }
+    .solutionbar.show{display:flex;}
+    .solutionbar .title{
+      font-weight:1100;
+      color:rgba(31,41,55,.92);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .solutionbar .meta{
+      color:var(--muted);
+      font-weight:950;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+  
+    .startscreen{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(255,255,255,.65);
+      backdrop-filter: blur(4px);
+      z-index:25;
+    }
+    .startscreen.hidden{display:none;}
+    .startbox{
+      text-align:center;
+      padding:28px 34px;
+      border-radius:22px;
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(31,41,55,.18);
+      box-shadow:0 25px 60px rgba(17,24,39,.18);
+    }
+    .startbox h2{
+      margin:0 0 10px 0;
+      font-size:20px;
+      font-weight:1100;
+    }
+    .bigstart{
+      font-size:18px;
+      padding:14px 26px;
+      border-radius:18px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+      <h1 style="text-align:center; margin:0 auto; width:100%;">SeriousPOP: Integer Sum of Squares</h1>
+</div>
+      <div class="row">
+        <button class="btn primary" id="startBtn">Start / Restart</button>
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card" id="boardCard">
+        <canvas id="game" width="820" height="560"></canvas>
+
+        <div class="solutionbar" id="solutionBar" aria-live="polite">
+          <span class="title">Best solution shown</span>
+          <span class="meta" id="solutionMeta">—</span>
+          <span style="flex:1"></span>
+          <button class="btn" id="exploreBtn">Explore</button>
+          <button class="btn" id="hideSolBtn">Hide</button>
+          <button class="btn" id="retryFromSolBtn">Retry</button>
+          <button class="btn primary" id="nextFromSolBtn">Next</button>
+        </div>
+
+        <div class="startscreen" id="startScreen">
+          <div class="startbox">
+            <h2>Level <span id="startLevelTxt">1</span></h2>
+            <p style="margin:0 0 18px 0;color:#5b6472;font-weight:950;">
+              Fill the board before time runs out.
+            </p>
+            <button class="btn primary bigstart" id="bigStartBtn">Start Level</button>
+          </div>
+        </div>
+
+
+
+        <div class="overlay" id="overlay">
+          <div class="modal">
+            <h3 id="ovTitle">Level complete</h3>
+            <p id="ovBody">Nice!</p>
+            <div class="stars" aria-label="Stars">
+              <span id="st1">★</span><span id="st2">★</span><span id="st3">★</span>
+            </div>
+            <div class="actions">
+              <button class="btn" id="showSolBtn">Show best solution</button>
+              <button class="btn" id="closeBtn">Close</button>
+              <button class="btn" id="retryBtn">Retry</button>
+              <button class="btn primary" id="nextBtn">Next level</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Level & scoring</h2>
+        <div class="body">
+          <div class="row" style="margin-bottom:10px">
+            <div class="pill">Level: <strong id="levelTxt">1</strong>/<strong id="levelMaxTxt">—</strong></div>
+            <div class="pill">Time left: <strong id="timeTxt">—</strong></div>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <div class="pill">Target: <strong id="targetTxt">—</strong></div>
+            <div class="pill">Filled: <strong id="filledTxt">0</strong></div>
+            <div class="pill">Remaining: <strong id="remTxt">—</strong></div>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <div class="pill">Board: <strong id="dimsTxt">—</strong></div>
+            <div class="pill">Allowed tiles: <strong id="tilesTxt">—</strong></div>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <div class="pill">Tiles used: <strong id="tilesUsedTxt">0</strong></div>
+            <div class="pill">Soft limit: <strong id="tileBudgetTxt">—</strong></div>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <div class="pill">Status: <span id="statusTxt" class="status">Press Start</span></div>
+          </div>
+
+          <div class="eq" id="eqStrip" aria-label="Decomposition equation strip"></div>
+
+          <div class="note" style="margin-top:12px">
+            Scoring: stars depend on <strong>time left</strong> and (from level 3) <strong>using not-too-many tiles</strong>.
+          </div>
+          <div class="note" style="margin-top:8px">
+            Controls: drag from the palette area (right) → board. Double-click to remove. Drag outside the board to delete.
+            Keys: <span class="kbd">Space</span> start/restart, <span class="kbd">N</span> next level, <span class="kbd">R</span> clear.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const TILE_COLORS = {
+    1:  { fill:"rgba(167,199,255,.55)", stroke:"rgba(105,145,220,.70)" },
+    4:  { fill:"rgba(185,246,209,.55)", stroke:"rgba(88,186,130,.70)" },
+    9:  { fill:"rgba(255,210,225,.62)", stroke:"rgba(222,120,160,.68)" },
+    16: { fill:"rgba(255,233,179,.62)", stroke:"rgba(220,170,60,.64)" },
+    25: { fill:"rgba(210,220,255,.62)", stroke:"rgba(120,140,220,.62)" },
+    36: { fill:"rgba(210,250,245,.60)", stroke:"rgba(70,170,160,.62)" },
+    49: { fill:"rgba(255,220,200,.62)", stroke:"rgba(220,120,80,.62)" },
+  };
+
+  const LEVELS = [
+    {w:7,  h:6,  min:1, max:4, time:45, tileBudget:16, penalizeTiles:false, name:"Warm-up"},
+    {w:12, h:8,  min:1, max:6, time:45, tileBudget:18, penalizeTiles:true,  name:"Big board"},
+    {w:12, h:9,  min:2, max:6, time:45, tileBudget:18, penalizeTiles:true,  name:"No 1×1"},
+    {candidates:[
+      {w:13,h:9, min:2,max:7, time:45, tileBudget:18, penalizeTiles:true, name:"Awkward 13×9"},
+      {w:14,h:9, min:2,max:7, time:45, tileBudget:20, penalizeTiles:true, name:"Wide 14×9"},
+      {w:15,h:8, min:2,max:7, time:45, tileBudget:20, penalizeTiles:true, name:"Wide 15×8"},
+    ]},
+    {candidates:[
+      {w:14,h:10,min:2,max:7, time:45, tileBudget:20, penalizeTiles:true, name:"Bigger 14×10"},
+      {w:15,h:10,min:2,max:7, time:45, tileBudget:22, penalizeTiles:true, name:"Bigger 15×10"},
+      {w:16,h:9, min:2,max:7, time:45, tileBudget:22, penalizeTiles:true, name:"Bigger 16×9"},
+    ]},
+    {candidates:[
+      {w:15,h:11,min:2,max:7, time:45, tileBudget:22, penalizeTiles:true, name:"Hard 15×11"},
+      {w:16,h:10,min:2,max:7, time:45, tileBudget:24, penalizeTiles:true, name:"Hard 16×10"},
+      {w:17,h:9, min:2,max:7, time:45, tileBudget:24, penalizeTiles:true, name:"Hard 17×9"},
+    ]},
+  ];
+
+  // Geometry
+  let CELL = 26;
+  const PAD = 16;
+  const HUD_H = 110;
+
+  let BW = 7, BH = 6, MIN_SIDE = 1, MAX_SIDE = 4;
+  let BOARD = {x:PAD, y:PAD+HUD_H, w:BW*CELL, h:BH*CELL};
+  let PALETTE = {x:0,y:0,w:0,h:0}; // palette drawing area (no border)
+  let SIZES = [];
+  let placed = [];
+  let dragging = null;
+  let solvedFlash = 0;
+
+  // Game state
+  let levelIdx = 0;
+  let running = false;
+  let timeLeft = 0;
+  let timerId = null;
+  let tileBudget = 0;
+  let penalizeTiles = false;
+  let levelName = "";
+  let solutionHint = null; // array of {x,y,s}
+  let solutionMode = false;      // true after showing best solution
+  let exploreMode = false;       // if true, allow editing solution
+  let gameStarted = false;       // prevent editing before pressing Start
+
+  // Solution bar UI
+  const solutionBar = document.getElementById('solutionBar');
+  const solutionMeta = document.getElementById('solutionMeta');
+  const startScreen = document.getElementById('startScreen');
+  const bigStartBtn = document.getElementById('bigStartBtn');
+  const startLevelTxt = document.getElementById('startLevelTxt');
+
+  // Palette layout cache (so pick+draw are consistent)
+  let palLayout = { palCell: CELL, tiles: [] };
+
+  // UI
+  const elLevel = document.getElementById("levelTxt");
+  const elLevelMax = document.getElementById("levelMaxTxt");
+  const elTime = document.getElementById("timeTxt");
+  const elTarget = document.getElementById("targetTxt");
+  const elFilled = document.getElementById("filledTxt");
+  const elRem = document.getElementById("remTxt");
+  const elDims = document.getElementById("dimsTxt");
+  const elTiles = document.getElementById("tilesTxt");
+  const elTilesUsed = document.getElementById("tilesUsedTxt");
+  const elTileBudget = document.getElementById("tileBudgetTxt");
+  const elStatus = document.getElementById("statusTxt");
+  const elEq = document.getElementById("eqStrip");
+
+  const overlay = document.getElementById("overlay");
+  const ovTitle = document.getElementById("ovTitle");
+  const ovBody = document.getElementById("ovBody");
+  const st1 = document.getElementById("st1");
+  const st2 = document.getElementById("st2");
+  const st3 = document.getElementById("st3");
+
+  elLevelMax.textContent = String(LEVELS.length);
+
+  function buildSizes() {
+    SIZES = [];
+    for (let s=MIN_SIDE; s<=MAX_SIDE; s++) SIZES.push(s);
+  }
+
+  function recomputeRegions() {
+    const contentTop = PAD + HUD_H;
+    const contentH = canvas.height - contentTop - PAD;
+
+    const outerPad = 28;
+    const gap = 38;
+
+    const minCell = 18;
+    const maxCell = 42;
+
+    let chosen = null;
+
+    for (let testCell = maxCell; testCell >= minCell; testCell--) {
+      CELL = testCell;
+
+      const boardW = BW * CELL;
+      const boardH = BH * CELL;
+
+      // Palette gets a strong width budget so it can use fewer rows.
+      const preferredPalW = Math.max(250, Math.min(400, Math.round(boardW * 1.00)));
+
+      if (boardW + gap + preferredPalW > canvas.width - 2 * outerPad) continue;
+      if (boardH > contentH - 8) continue;
+
+      // Force the palette to fit within the board height.
+      const measureBox = { x: 0, y: 0, w: preferredPalW, h: boardH };
+      const measured = computePaletteLayout(measureBox);
+      if (!measured || measured.tiles.length === 0) continue;
+      if (measured.totalH > boardH) continue;
+
+      const palUsedW = Math.max(220, measured.totalW);
+      const palUsedH = measured.totalH;
+
+      const groupW = boardW + gap + palUsedW;
+      const groupH = boardH; // palette must stay within board height now
+
+      if (groupW <= canvas.width - 2 * outerPad && groupH <= contentH - 8) {
+        chosen = {
+          cell: testCell,
+          boardW, boardH,
+          palUsedW, palUsedH,
+          groupW, groupH
+        };
+        break;
+      }
+    }
+
+    if (!chosen) {
+      CELL = minCell;
+      const boardW = BW * CELL;
+      const boardH = BH * CELL;
+      const preferredPalW = Math.max(250, Math.min(400, Math.round(boardW * 1.00)));
+      const measured = computePaletteLayout({ x:0, y:0, w:preferredPalW, h:boardH });
+
+      chosen = {
+        cell: CELL,
+        boardW, boardH,
+        palUsedW: Math.max(220, measured ? measured.totalW : preferredPalW),
+        palUsedH: measured ? Math.min(boardH, measured.totalH) : boardH
+      };
+      chosen.groupW = chosen.boardW + gap + chosen.palUsedW;
+      chosen.groupH = chosen.boardH;
+    }
+
+    CELL = chosen.cell;
+
+    const groupX = Math.round((canvas.width - chosen.groupW) / 2);
+    const groupY = Math.round(contentTop + (contentH - chosen.groupH) / 2);
+
+    BOARD = {
+      x: groupX,
+      y: groupY,
+      w: chosen.boardW,
+      h: chosen.boardH
+    };
+
+    PALETTE = {
+      x: BOARD.x + BOARD.w + gap,
+      y: BOARD.y,
+      w: chosen.palUsedW,
+      h: BOARD.h
+    };
+
+    computePaletteLayout(PALETTE);
+  }
+
+  function target() { return BW * BH; }
+  function filledCells() { return placed.reduce((acc,t) => acc + t.s*t.s, 0); }
+  function tilesUsed() { return placed.length; }
+
+  function fmtTime(s) {
+    const m = Math.floor(s/60);
+    const r = Math.max(0, s - m*60);
+    return `${m}:${String(r).padStart(2,"0")}`;
+  }
+
+  function setStatus(text, kind=null) {
+    elStatus.textContent = text;
+    elStatus.classList.remove("good","bad","warn");
+    if (kind) elStatus.classList.add(kind);
+  }
+
+  function updateEquationStrip() {
+    elEq.innerHTML = "";
+    if (placed.length === 0) {
+      const span = document.createElement("span");
+      span.className = "note";
+      span.textContent = "Your decomposition appears here (e.g., 2×3² + 1×2² + …).";
+      elEq.appendChild(span);
+      return;
+    }
+    const counts = new Map();
+    for (const t of placed) counts.set(t.s, (counts.get(t.s)||0) + 1);
+    const sizes = Array.from(counts.keys()).sort((a,b)=>b-a);
+
+    sizes.forEach((s, idx) => {
+      const c = counts.get(s);
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.innerHTML = `<span>${c}×${s}<sup>2</sup></span><small>= ${c*s*s}</small>`;
+      elEq.appendChild(chip);
+      if (idx < sizes.length - 1) {
+        const plus = document.createElement("span");
+        plus.style.fontWeight = "1100";
+        plus.textContent = "+";
+        elEq.appendChild(plus);
+      }
+    });
+  }
+
+  function updateHUD() {
+    elLevel.textContent = String(levelIdx + 1);
+    elTarget.textContent = String(target());
+    elDims.textContent = `${BW} × ${BH}`;
+    elTiles.textContent = `${MIN_SIDE}..${MAX_SIDE}` + (MIN_SIDE === 2 ? " (no 1×1)" : "");
+    elTilesUsed.textContent = String(tilesUsed());
+    elTileBudget.textContent = String(tileBudget);
+    elTime.textContent = fmtTime(timeLeft);
+
+    const f = filledCells();
+    elFilled.textContent = String(f);
+    elRem.textContent = String(Math.max(0, target() - f));
+    updateEquationStrip();
+
+    if (!running) return;
+    if (timeLeft <= 10) setStatus("Hurry up!", "warn");
+    else setStatus(levelName || "Go!", null);
+  }
+
+  function clearBoard() {
+    placed = [];
+    solvedFlash = 0;
+    updateHUD();
+  }
+
+  function stopTimer() {
+    running = false;
+    if (timerId) clearInterval(timerId);
+    timerId = null;
+  }
+
+  // ---------- Solver: minimal tile count (branch & bound) ----------
+  function computeBestTiling(w,h,minS,maxS, nodeLimit=900000) {
+    const sizes = [];
+    for (let s=maxS; s>=minS; s--) sizes.push(s);
+
+    const occ = new Uint8Array(w*h);
+    const sol = [];
+    let best = null;
+    let nodes = 0;
+
+    function idx(x,y){ return y*w + x; }
+    function findEmpty(){
+      for (let y=0;y<h;y++){
+        for (let x=0;x<w;x++){
+          if (!occ[idx(x,y)]) return {x,y};
+        }
+      }
+      return null;
+    }
+    function canPlaceAt(x,y,s){
+      if (x+s> w || y+s>h) return false;
+      for (let yy=y; yy<y+s; yy++){
+        for (let xx=x; xx<x+s; xx++){
+          if (occ[idx(xx,yy)]) return false;
+        }
+      }
+      return true;
+    }
+    function place(x,y,s, v){
+      for (let yy=y; yy<y+s; yy++){
+        for (let xx=x; xx<x+s; xx++){
+          occ[idx(xx,yy)] = v;
+        }
+      }
+    }
+
+    function dfs(){
+      nodes++;
+      if (nodes > nodeLimit) return;
+      if (best && sol.length >= best.length) return;
+
+      const p = findEmpty();
+      if (!p) { best = sol.slice(); return; }
+
+      for (const s of sizes){
+        if (canPlaceAt(p.x,p.y,s)){
+          place(p.x,p.y,s,1);
+          sol.push({x:p.x,y:p.y,s});
+          dfs();
+          sol.pop();
+          place(p.x,p.y,s,0);
+        }
+      }
+    }
+
+    dfs();
+    return best;
+  }
+
+  function resolveLevelSpec(raw) {
+    if (!raw.candidates) return raw;
+    for (const cand of raw.candidates) {
+      const best = computeBestTiling(cand.w, cand.h, cand.min, cand.max, 550000);
+      if (best) { solutionHint = best; return cand; }
+    }
+    solutionHint = null;
+    return raw.candidates[0];
+  }
+
+  function refreshSolutionHintForCurrent() {
+    solutionHint = computeBestTiling(BW, BH, MIN_SIDE, MAX_SIDE, 650000);
+  }
+
+  function loadLevel(idx) {
+    stopTimer();
+    levelIdx = Math.max(0, Math.min(LEVELS.length-1, idx));
+    const resolved = resolveLevelSpec(LEVELS[levelIdx]);
+
+    BW = resolved.w; BH = resolved.h;
+    MIN_SIDE = resolved.min; MAX_SIDE = resolved.max;
+    tileBudget = resolved.tileBudget;
+    penalizeTiles = !!resolved.penalizeTiles;
+    levelName = resolved.name || `Level ${levelIdx+1}`;
+
+    buildSizes();
+    recomputeRegions();
+    clearBoard();
+
+    if (!LEVELS[levelIdx].candidates) refreshSolutionHintForCurrent();
+
+    timeLeft = resolved.time;
+    setStatus("Press Start", null);
+    hideOverlay();
+    hideSolutionBar();
+    gameStarted = false;
+    startLevelTxt.textContent = String(levelIdx+1);
+    startScreen.classList.remove("hidden");
+    updateHUD();
+  }
+
+  function startLevel() {
+    stopTimer();
+    hideOverlay();
+    hideSolutionBar();
+    clearBoard();
+    const resolved = resolveLevelSpec(LEVELS[levelIdx]);
+    timeLeft = resolved.time;
+
+    if (!solutionHint) refreshSolutionHintForCurrent();
+
+    gameStarted = true;
+    startScreen.classList.add("hidden");
+    running = true;
+    setStatus(levelName || "Go!", null);
+    updateHUD();
+
+    timerId = setInterval(() => {
+      if (!running) return;
+      timeLeft -= 1;
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        updateHUD();
+        failLevel();
+      } else {
+        updateHUD();
+      }
+    }, 1000);
+  }
+
+  function computeStars() {
+    const total = resolveLevelSpec(LEVELS[levelIdx]).time;
+    const ratio = total > 0 ? (timeLeft / total) : 0;
+
+    let timeStars = 1;
+    if (ratio >= 0.40) timeStars = 3;
+    else if (ratio >= 0.20) timeStars = 2;
+
+    if (!penalizeTiles) return timeStars;
+
+    const used = tilesUsed();
+    let penalty = 0;
+    if (used <= tileBudget) penalty = 0;
+    else if (used <= tileBudget + 4) penalty = 1;
+    else penalty = 2;
+
+    return Math.max(1, timeStars - penalty);
+  }
+
+  
+  function hideSolutionBar(){
+    solutionMode = false;
+    exploreMode = false;
+    solutionBar.classList.remove("show");
+    solutionMeta.textContent = "—";
+  }
+  function showSolutionBar(metaText){
+    solutionMode = true;
+    exploreMode = false;
+    solutionMeta.textContent = metaText;
+    solutionBar.classList.add("show");
+  }
+
+function showOverlay(title, body, stars, canNext=true) {
+    ovTitle.textContent = title;
+    ovBody.textContent = body;
+
+    // stars can be 0 (for timeout / just showing a solution)
+    [st1,st2,st3].forEach((s,i)=>s.classList.toggle("on", i < stars));
+
+    document.getElementById("nextBtn").disabled = !canNext;
+    document.getElementById("showSolBtn").disabled = !solutionHint;
+
+    hideSolutionBar();
+    overlay.classList.add("show");
+  }
+  function hideOverlay() { overlay.classList.remove("show"); }
+
+  function winLevel() {
+    stopTimer();
+    solvedFlash = 22;
+    setStatus("Solved ✓", "good");
+
+    const stars = computeStars();
+    const nextExists = levelIdx < LEVELS.length - 1;
+
+    const used = tilesUsed();
+    const extra = penalizeTiles ? ` Tiles used: ${used} (soft limit ${tileBudget}).` : "";
+    showOverlay("Level complete ✓", `Solved with ${fmtTime(timeLeft)} left.${extra} Stars: ${stars}/3.`, stars, nextExists);
+  }
+
+  function failLevel() {
+    stopTimer();
+    setStatus("Time's up", "bad");
+    const nextExists = levelIdx < LEVELS.length - 1;
+    showOverlay("Time's up ⏱", "You can view the best solution, then Retry or go to Next level.", 0, nextExists);
+  }
+
+  // ---------- Show best solution (and keep the game navigable) ----------
+  function applySolution() {
+    if (!solutionHint) return;
+
+    // Stop timer so "solution view" is calm and stable.
+    stopTimer();
+
+    // Apply the best (fewest tiles) solution.
+    placed = solutionHint.map(p => ({ id: crypto.randomUUID(), s: p.s, gx: p.x, gy: p.y }));
+    solvedFlash = 22;
+    setStatus("Best solution shown", "good");
+    updateHUD();
+
+    // Show the solution clearly: no big dialog covering the board.
+    hideOverlay();
+    const meta = `Tiles: ${placed.length}${MIN_SIDE === 2 ? " • no 1×1" : ""}`;
+    showSolutionBar(meta);
+  }
+
+  // ---------- Placement ----------
+  function pointInRect(px, py, r) {
+    return px >= r.x && px <= r.x+r.w && py >= r.y && py <= r.y+r.h;
+  }
+  function boardToGrid(px, py) {
+    return { gx: Math.floor((px - BOARD.x)/CELL), gy: Math.floor((py - BOARD.y)/CELL) };
+  }
+  function gridToBoardPx(gx, gy) {
+    return { x: BOARD.x + gx*CELL, y: BOARD.y + gy*CELL };
+  }
+  function canPlace(s, gx, gy, ignoreId=null) {
+    if (gx < 0 || gy < 0) return false;
+    if (gx + s > BW) return false;
+    if (gy + s > BH) return false;
+    for (const t of placed) {
+      if (ignoreId && t.id === ignoreId) continue;
+      const overlap = !(gx+s <= t.gx || t.gx+t.s <= gx || gy+s <= t.gy || t.gy+t.s <= gy);
+      if (overlap) return false;
+    }
+    return true;
+  }
+  function tileRectInBoard(t) {
+    const p = gridToBoardPx(t.gx, t.gy);
+    return { x:p.x, y:p.y, w:t.s*CELL, h:t.s*CELL };
+  }
+  function pickPlaced(px, py) {
+    for (let i=placed.length-1;i>=0;i--) {
+      const r = tileRectInBoard(placed[i]);
+      if (px>=r.x && px<=r.x+r.w && py>=r.y && py<=r.y+r.h) return placed[i];
+    }
+    return null;
+  }
+
+  // (1) Non-overlapping, horizontal rows, no box:
+  // We compute a row-wrap layout. If it would overflow vertically, we scale palette tiles down (palCell < CELL)
+  function computePaletteLayout(box = PALETTE) {
+    const padX = 0;
+    const padY = 0;
+    const gap = 12;
+    const vgap = 14;
+
+    const maxW = Math.max(0, box.w - padX * 2);
+    const maxH = Math.max(0, box.h - padY * 2);
+
+    function bestPartitionForCell(palCell) {
+      const items = SIZES.slice().reverse().map(s => ({ s, w: s * palCell, h: s * palCell, palCell }));
+      const n = items.length;
+      if (n === 0) return { rows: [], totalW: 0, totalH: 0, palCell };
+
+      const prefixW = [0];
+      for (let i = 0; i < n; i++) prefixW.push(prefixW[prefixW.length - 1] + items[i].w);
+
+      function rowWidth(i, j) {
+        const count = j - i + 1;
+        return (prefixW[j + 1] - prefixW[i]) + gap * Math.max(0, count - 1);
+      }
+
+      let best = null;
+
+      function score(rows) {
+        const rowWs = rows.map(r => rowWidth(r[0], r[1]));
+        const rowHs = rows.map(r => items[r[0]].h); // same cell size, max h is first/any
+        const totalW = Math.max(...rowWs);
+        const totalH = rowHs.reduce((a, h) => a + h, 0) + vgap * Math.max(0, rows.length - 1);
+        const singletons = rows.filter(r => (r[1] - r[0] + 1) === 1).length;
+        const ragged = rowWs.reduce((a, w) => a + Math.pow(maxW - w, 2), 0);
+        return { totalW, totalH, singletons, ragged };
+      }
+
+      function dfs(start, rows) {
+        if (start >= n) {
+          const sc = score(rows);
+          if (sc.totalW > maxW || sc.totalH > maxH) {
+            return;
+          }
+          const cand = { rows: rows.slice(), ...sc };
+          if (
+            !best ||
+            cand.rows.length < best.rows.length ||
+            (cand.rows.length === best.rows.length && cand.singletons < best.singletons) ||
+            (cand.rows.length === best.rows.length && cand.singletons === best.singletons && cand.ragged < best.ragged)
+          ) {
+            best = cand;
+          }
+          return;
+        }
+
+        // First row: try at least 2 tiles when possible.
+        const minCount = (rows.length === 0 && n - start >= 2) ? 2 : 1;
+        const maxCount = n - start;
+
+        for (let count = maxCount; count >= minCount; count--) {
+          const end = start + count - 1;
+          const w = rowWidth(start, end);
+          if (w > maxW) continue;
+
+          rows.push([start, end]);
+          dfs(end + 1, rows);
+          rows.pop();
+        }
+      }
+
+      dfs(0, []);
+      return best ? { rows: best.rows, totalW: best.totalW, totalH: best.totalH, palCell } : null;
+    }
+
+    // Try large palette cells first, scale down only if needed.
+    let best = null;
+    for (let palCell = Math.min(CELL, 54); palCell >= 14; palCell--) {
+      const part = bestPartitionForCell(palCell);
+      if (part) { best = part; break; }
+    }
+
+    if (!best) {
+      palLayout = { palCell: 14, tiles: [], totalW: 0, totalH: 0 };
+      return palLayout;
+    }
+
+    const items = SIZES.slice().reverse().map(s => ({ s, w: s * best.palCell, h: s * best.palCell, palCell: best.palCell }));
+    const tiles = [];
+    let y = box.y + padY;
+
+    for (const [i, j] of best.rows) {
+      let x = box.x + padX; // left-aligned
+      for (let k = i; k <= j; k++) {
+        const it = items[k];
+        tiles.push({ s: it.s, x, y, w: it.w, h: it.h, palCell: best.palCell });
+        x += it.w + gap;
+      }
+      y += items[i].h + vgap;
+    }
+
+    palLayout = {
+      palCell: best.palCell,
+      tiles,
+      totalW: best.totalW,
+      totalH: best.totalH
+    };
+    return palLayout;
+  }
+
+  function pickPalette(px, py) {
+    for (const t of palLayout.tiles) {
+      if (px>=t.x && px<=t.x+t.w && py>=t.y && py<=t.y+t.h) return t;
+    }
+    return null;
+  }
+
+  // ---------- Drawing ----------
+  function roundRect(ctx,x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function drawTilePx(x,y,s,cellSize,opts={}) {
+    const area = s*s;
+    const colors = TILE_COLORS[area] || TILE_COLORS[4] || TILE_COLORS[1];
+    const fill = opts.fill ?? colors.fill;
+    const stroke = opts.stroke ?? colors.stroke;
+
+    const w = s*cellSize, h = s*cellSize;
+    ctx.save();
+    roundRect(ctx,x,y,w,h,12);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    if (s >= 2 && cellSize >= 18) {
+      ctx.strokeStyle = "rgba(31,41,55,.10)";
+      ctx.lineWidth = 1;
+      for (let i=1;i<s;i++){
+        ctx.beginPath();
+        ctx.moveTo(x + i*cellSize + 0.5, y + 6);
+        ctx.lineTo(x + i*cellSize + 0.5, y + h - 6);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x + 6, y + i*cellSize + 0.5);
+        ctx.lineTo(x + w - 6, y + i*cellSize + 0.5);
+        ctx.stroke();
+      }
+    }
+
+    ctx.fillStyle = "rgba(31,41,55,.88)";
+    ctx.font = (cellSize >= 22 ? "1100 13px system-ui" : "1100 11px system-ui");
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${s}²`, x+w/2, y+h/2);
+    ctx.restore();
+  }
+
+  function drawBoard() {
+    ctx.save();
+    ctx.strokeStyle = "rgba(31,41,55,.22)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, BOARD.x-2, BOARD.y-2, BOARD.w+4, BOARD.h+4, 18);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(31,41,55,.08)";
+    ctx.lineWidth = 1;
+    for (let i=1;i<BW;i++){
+      const x = BOARD.x + i*CELL + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, BOARD.y); ctx.lineTo(x, BOARD.y+BOARD.h); ctx.stroke();
+    }
+    for (let j=1;j<BH;j++){
+      const y = BOARD.y + j*CELL + 0.5;
+      ctx.beginPath(); ctx.moveTo(BOARD.x, y); ctx.lineTo(BOARD.x+BOARD.w, y); ctx.stroke();
+    }
+
+    if (solvedFlash > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(0.40, solvedFlash/28);
+      ctx.fillStyle = "rgba(185,246,209,.78)";
+      roundRect(ctx, BOARD.x, BOARD.y, BOARD.w, BOARD.h, 16);
+      ctx.fill();
+      ctx.restore();
+      solvedFlash--;
+    }
+    ctx.restore();
+  }
+
+  function drawPalette() {
+    ctx.save();
+    // No box around palette (per request). We only draw a label.
+
+    // Draw tiles in rows (non-overlapping) using palLayout
+    for (const t of palLayout.tiles) drawTilePx(t.x, t.y, t.s, t.palCell);
+
+    ctx.restore();
+  }
+
+  function drawPlaced() {
+    for (const t of placed) {
+      const r = tileRectInBoard(t);
+      drawTilePx(r.x, r.y, t.s, CELL);
+    }
+  }
+
+  function drawGhost() {
+    if (!dragging) return;
+    const s = dragging.tile.s;
+    if (!pointInRect(dragging.px, dragging.py, BOARD)) return;
+
+    const {gx, gy} = boardToGrid(dragging.px - dragging.offx, dragging.py - dragging.offy);
+    const ignore = dragging.source === "board" ? dragging.tile.id : null;
+    const ok = canPlace(s, gx, gy, ignore);
+
+    const p = gridToBoardPx(gx, gy);
+    drawTilePx(p.x, p.y, s, CELL, {
+      fill: ok ? "rgba(185,246,209,.55)" : "rgba(255,210,225,.60)",
+      stroke: ok ? "rgba(88,186,130,.72)" : "rgba(222,120,160,.72)"
+    });
+
+    ctx.save();
+    ctx.fillStyle = "rgba(31,41,55,.75)";
+    ctx.font = "1100 12px system-ui";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(ok ? "Release to place" : "Doesn't fit / overlaps", BOARD.x, BOARD.y - 10);
+    ctx.restore();
+  }
+
+  function drawDragging() {
+    if (!dragging) return;
+    const s = dragging.tile.s;
+    const x = dragging.px - dragging.offx;
+    const y = dragging.py - dragging.offy;
+    drawTilePx(x, y, s, CELL, { fill:"rgba(255,255,255,.52)", stroke:"rgba(31,41,55,.35)" });
+  }
+
+  
+  
+  
+  function drawHudText() {
+    ctx.save();
+
+    // Center over the full canvas, not just over the board.
+    const centerX = canvas.width / 2;
+    const headerTop = 18;
+    const leftText = "Compose ";
+    const numText = String(target());
+    const rightText = " as sum of squares";
+
+    // Choose a font size that actually fits the canvas width.
+    let titleSize = 42;
+    const maxTitleWidth = canvas.width - 80;
+    while (titleSize > 24) {
+      ctx.font = `900 ${titleSize}px system-ui`;
+      const totalWidth =
+        ctx.measureText(leftText).width +
+        ctx.measureText(numText).width +
+        ctx.measureText(rightText).width;
+      if (totalWidth <= maxTitleWidth) break;
+      titleSize -= 2;
+    }
+
+    ctx.font = `900 ${titleSize}px system-ui`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+
+    const leftW = ctx.measureText(leftText).width;
+    const numW = ctx.measureText(numText).width;
+    const rightW = ctx.measureText(rightText).width;
+    const totalW = leftW + numW + rightW;
+    const startX = centerX - totalW / 2;
+
+    ctx.fillStyle = "rgba(31,41,55,.96)";
+    ctx.fillText(leftText, startX, headerTop);
+
+    // Medium red: visible but not harsh
+    ctx.fillStyle = "rgba(185,65,75,.92)";
+    ctx.fillText(numText, startX + leftW, headerTop);
+
+    ctx.fillStyle = "rgba(31,41,55,.96)";
+    ctx.fillText(rightText, startX + leftW + numW, headerTop);
+
+    // Center timer vertically between heading and play area.
+    const headingBottom = headerTop + titleSize;
+    const timerY = Math.round((headingBottom + BOARD.y) / 2 - 16);
+
+    ctx.fillStyle = (running && timeLeft <= 10)
+      ? "rgba(220,38,38,.96)"
+      : "rgba(31,41,55,.68)";
+    ctx.font = "800 28px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(fmtTime(timeLeft), centerX, timerY);
+
+    ctx.restore();
+  }
+
+
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawHudText();
+    drawBoard();
+    drawPalette();
+    drawPlaced();
+    drawGhost();
+    drawDragging();
+    requestAnimationFrame(draw);
+  }
+
+  // ---------- Pointer handling ----------
+  function pointerPos(evt) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width;
+    const sy = canvas.height / rect.height;
+    return { x: (evt.clientX - rect.left) * sx, y: (evt.clientY - rect.top) * sy };
+  }
+
+  canvas.addEventListener("pointerdown", (evt) => {
+    if (overlay.classList.contains("show")) return;
+    if (!gameStarted) return;
+    if (solutionMode && !exploreMode) return; // prevent editing while solution is displayed
+    canvas.setPointerCapture(evt.pointerId);
+    const {x,y} = pointerPos(evt);
+
+    const p = pickPlaced(x,y);
+    if (p) {
+      const r = tileRectInBoard(p);
+      dragging = { source:"board", tile:p, offx:x-r.x, offy:y-r.y, px:x, py:y };
+      placed = placed.filter(t => t.id !== p.id);
+      placed.push(p);
+      return;
+    }
+
+    // Palette picking uses computed non-overlapping layout
+    const pal = pickPalette(x,y);
+    if (pal) {
+      dragging = { source:"palette", tile:{s:pal.s}, offx:(pal.w/2), offy:(pal.h/2), px:x, py:y };
+    }
+  });
+
+  canvas.addEventListener("pointermove", (evt) => {
+    if (!dragging) return;
+    const {x,y} = pointerPos(evt);
+    dragging.px = x; dragging.py = y;
+  });
+
+  canvas.addEventListener("pointerup", (evt) => {
+    if (!dragging) return;
+    const {x,y} = pointerPos(evt);
+    const s = dragging.tile.s;
+
+    if (pointInRect(x,y,BOARD)) {
+      const {gx, gy} = boardToGrid(x - dragging.offx, y - dragging.offy);
+      const ignore = dragging.source === "board" ? dragging.tile.id : null;
+      if (canPlace(s, gx, gy, ignore)) {
+        if (dragging.source === "board") {
+          dragging.tile.gx = gx; dragging.tile.gy = gy;
+          placed = placed.filter(t => t.id !== dragging.tile.id);
+          placed.push(dragging.tile);
+        } else {
+          placed.push({ id: crypto.randomUUID(), s, gx, gy });
+        }
+        updateHUD();
+        if (running && filledCells() === target()) winLevel();
+      }
+    } else {
+      if (dragging.source === "board") {
+        placed = placed.filter(t => t.id !== dragging.tile.id);
+        updateHUD();
+      }
+    }
+    dragging = null;
+  });
+
+  canvas.addEventListener("dblclick", (evt) => {
+    if (overlay.classList.contains("show")) return;
+    if (!gameStarted) return;
+    if (solutionMode && !exploreMode) return;
+    const {x,y} = pointerPos(evt);
+    const p = pickPlaced(x,y);
+    if (p) {
+      placed = placed.filter(t => t.id !== p.id);
+      updateHUD();
+    }
+  });
+
+  // Buttons
+  document.getElementById("startBtn").addEventListener("click", startLevel);
+  bigStartBtn.addEventListener("click", startLevel);
+  document.getElementById("clearBtn").addEventListener("click", clearBoard);
+  document.getElementById("retryBtn").addEventListener("click", () => { hideOverlay(); startLevel(); });
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    hideOverlay();
+    if (levelIdx < LEVELS.length - 1) loadLevel(levelIdx + 1);
+    else loadLevel(0);
+    startLevel();
+  });
+  document.getElementById("showSolBtn").addEventListener("click", applySolution);
+  document.getElementById("closeBtn").addEventListener("click", () => hideOverlay());
+
+  // Solution bar actions
+  document.getElementById("exploreBtn").addEventListener("click", () => {
+    if (!solutionMode) return;
+    exploreMode = true;
+    setStatus("Explore mode (solution unlocked)", null);
+    solutionBar.classList.remove("show");
+  });
+  document.getElementById("hideSolBtn").addEventListener("click", () => {
+    hideSolutionBar();
+    // keep the solution on the board, but allow interaction only if you restart.
+    // (If you want to play again, use Retry or Start.)
+  });
+  document.getElementById("retryFromSolBtn").addEventListener("click", () => { hideSolutionBar(); startLevel(); });
+  document.getElementById("nextFromSolBtn").addEventListener("click", () => {
+    hideSolutionBar();
+    if (levelIdx < LEVELS.length - 1) loadLevel(levelIdx + 1);
+    else loadLevel(0);
+    startLevel();
+  });
+
+  // Keyboard shortcuts
+  window.addEventListener("keydown", (evt) => {
+    const k = evt.key.toLowerCase();
+    if (k === " ") { evt.preventDefault(); startLevel(); }
+    if (k === "r") clearBoard();
+    if (k === "n") { if (levelIdx < LEVELS.length - 1) loadLevel(levelIdx + 1); else loadLevel(0); }
+    if (k === "enter" && overlay.classList.contains("show")) document.getElementById("nextBtn").click();
+    if (k === "escape") hideOverlay();
+  });
+
+  // Init
+  loadLevel(0);
+  draw();
+})();
+</script>
+</body>
+</html>
